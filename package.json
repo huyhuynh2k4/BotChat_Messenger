@@ -1,0 +1,56 @@
+{
+  "name": "yumi-bot",
+  "version": "1.0.0",
+  "description": "A normal Facebook Messenger bot to chat with you.",
+  "type": "commonjs",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write --list-different .",
+    "lint-staged": "lint-staged",
+    "prepare": "husky"
+  },
+  "keywords": [
+    "facebook",
+    "chat",
+    "api",
+    "messenger",
+    "e2ee",
+    "bot"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yumi-team/yumi-bot.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yumi-team/yumi-bot/issues"
+  },
+  "homepage": "https://github.com/yumi-team/yumi-bot#readme",
+  "author": "mikamisonodev & aiko-chan-ai",
+  "license": "AGPL-3.0-or-later",
+  "dependencies": {
+    "meta-messenger.js": "^1.0.0"
+  },
+  "devDependencies": {
+    "@commitlint/config-conventional": "^20.0.0",
+    "@eslint/eslintrc": "^3.3.1",
+    "@eslint/js": "^9.37.0",
+    "@types/node": "^25.1.0",
+    "commitlint": "^20.1.0",
+    "eslint": "^9.37.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "eslint-plugin-unused-imports": "^4.2.0",
+    "globals": "^16.4.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.2.4",
+    "prettier": "^3.6.2",
+    "tsx": "^4.21.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.46.1"
+  },
+  "engines": {
+    "node": ">=22.12.0"
+  }
+}
