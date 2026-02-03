@@ -31,12 +31,15 @@
   "author": "mikamisonodev & aiko-chan-ai",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "debug": "^4.4.3",
+    "dotenv": "^17.2.3",
     "meta-messenger.js": "^1.0.0"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "^20.0.0",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.37.0",
+    "@types/debug": "^4.1.12",
     "@types/node": "^25.1.0",
     "commitlint": "^20.1.0",
     "eslint": "^9.37.0",
