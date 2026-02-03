@@ -37,5 +37,5 @@ export default async (client: Bot) => {
         count++;
     }
 
-    logger.debug(`> Loaded ${count} event(s)!`);
+    logger.debug(`> Loaded ${count} event(s).`);
 };

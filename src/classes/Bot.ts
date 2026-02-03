@@ -1,12 +1,22 @@
 import fs from "fs";
-import { Client, type ClientEventMap, Utils } from "meta-messenger.js";
+import { Client, type ClientEventMap, type E2EEMessage, type Message, Utils } from "meta-messenger.js";
 import path from "path";
 
 import type { CreateEventProps } from "@/handlers/event";
 import { importDefault } from "@/utils/import";
 import { logger } from "@/utils/logger";
 
+export type CommandProps = {
+    name: string;
+    aliases?: string[];
+    run: (client: Bot, message: Message | E2EEMessage, args: string[]) => Promise<void> | void;
+};
+
 export class Bot extends Client {
+    public commands: Map<string, CommandProps> = new Map();
+    public categories: Map<string, string[]> = new Map();
+    public aliases: Map<string, string> = new Map();
+
     constructor() {
         const cookieFilePath = path.join(process.cwd(), process.env.COOKIE_FILE_PATH);
         if (!fs.existsSync(cookieFilePath)) {
@@ -20,6 +30,10 @@ export class Bot extends Client {
     }
 
     public static createEvent<T extends keyof ClientEventMap>(props: CreateEventProps<T>) {
+        return props;
+    }
+
+    public static createCommand(props: CommandProps) {
         return props;
     }
 
