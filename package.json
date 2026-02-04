@@ -34,7 +34,9 @@
   "dependencies": {
     "debug": "^4.4.3",
     "dotenv": "^17.2.3",
-    "meta-messenger.js": "^1.1.0"
+    "meta-messenger.js": "^1.1.0",
+    "openai": "^6.17.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@commitlint/config-conventional": "^20.0.0",

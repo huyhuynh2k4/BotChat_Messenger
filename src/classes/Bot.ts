@@ -1,5 +1,5 @@
 import fs from "fs";
-import { Client, type ClientEventMap, Utils } from "meta-messenger.js";
+import { Client, type ClientEventMap, type If, Utils } from "meta-messenger.js";
 import path from "path";
 
 import type { CommandProps } from "@/handlers/command";
@@ -11,6 +11,16 @@ export class Bot<Ready extends boolean = boolean> extends Client<Ready> {
     public commands: Map<string, CommandProps> = new Map();
     public categories: Map<string, string[]> = new Map();
     public aliases: Map<string, string> = new Map();
+
+    #readyAt: If<Ready, Date> = null as If<Ready, Date>;
+
+    public get readyAt(): If<Ready, Date> {
+        return this.#readyAt;
+    }
+
+    public get readyTimestamp(): If<Ready, number> {
+        return (this.#readyAt ? this.#readyAt.getTime() : null) as If<Ready, number>;
+    }
 
     constructor() {
         const cookieFilePath = path.join(process.cwd(), process.env.COOKIE_FILE_PATH);
@@ -50,6 +60,7 @@ export class Bot<Ready extends boolean = boolean> extends Client<Ready> {
     public start() {
         this.once("fullyReady", () => {
             logger.debug("> Client is fully ready!");
+            this.#readyAt = new Date() as If<Ready, Date>;
         });
 
         this.connect().then(({ user }) => {
