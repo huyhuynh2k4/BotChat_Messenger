@@ -4,8 +4,8 @@ import { checkMessageE2EE } from "@/utils/utils";
 export default Bot.createCommand({
     name: "ping",
     aliases: ["p"],
-    run: async (client, message, args) => {
-        const ping = Date.now() - message.timestampMs;
+    run: async ({ client, message }) => {
+        const ping = Date.now() - Number(message.timestampMs);
         const isE2EE = checkMessageE2EE(message);
 
         if (isE2EE) {

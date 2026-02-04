@@ -19,7 +19,7 @@ export default Bot.createEvent({
         if (!command) return;
 
         try {
-            command.run(client, message, args);
+            command.run({ client, message, args });
         } catch (error) {
             logger.error(`Error executing command ${commandName}`);
             console.error(error);

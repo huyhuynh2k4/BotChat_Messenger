@@ -6,13 +6,19 @@ import type { CreateEventProps } from "@/handlers/event";
 import { importDefault } from "@/utils/import";
 import { logger } from "@/utils/logger";
 
+type CommandParams = {
+    client: Bot<true>;
+    message: Message | E2EEMessage;
+    args: string[];
+};
+
 export type CommandProps = {
     name: string;
     aliases?: string[];
-    run: (client: Bot, message: Message | E2EEMessage, args: string[]) => Promise<void> | void;
+    run: (params: CommandParams) => Promise<void> | void;
 };
 
-export class Bot extends Client {
+export class Bot<Ready extends boolean = boolean> extends Client<Ready> {
     public commands: Map<string, CommandProps> = new Map();
     public categories: Map<string, string[]> = new Map();
     public aliases: Map<string, string> = new Map();
