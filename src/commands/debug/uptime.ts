@@ -2,8 +2,8 @@ import { Bot } from "@/classes/Bot";
 import { checkMessageE2EE } from "@/utils/utils";
 
 export default Bot.createCommand({
-    name: "ping",
-    aliases: ["p"],
+    name: "uptime",
+    aliases: ["u"],
     run: async ({ client, message }) => {
         const uptime = Date.now() - client.readyTimestamp;
 
