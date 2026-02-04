@@ -1,22 +1,11 @@
 import fs from "fs";
-import { Client, type ClientEventMap, type E2EEMessage, type Message, Utils } from "meta-messenger.js";
+import { Client, type ClientEventMap, Utils } from "meta-messenger.js";
 import path from "path";
 
+import type { CommandProps } from "@/handlers/command";
 import type { CreateEventProps } from "@/handlers/event";
 import { importDefault } from "@/utils/import";
 import { logger } from "@/utils/logger";
-
-type CommandParams = {
-    client: Bot<true>;
-    message: Message | E2EEMessage;
-    args: string[];
-};
-
-export type CommandProps = {
-    name: string;
-    aliases?: string[];
-    run: (params: CommandParams) => Promise<void> | void;
-};
 
 export class Bot<Ready extends boolean = boolean> extends Client<Ready> {
     public commands: Map<string, CommandProps> = new Map();
