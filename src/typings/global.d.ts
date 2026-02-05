@@ -6,6 +6,10 @@ declare namespace NodeJS {
         readonly FB_UID: string;
         readonly FB_PASSWORD: string;
 
+        // API Key
+        readonly API_KEY: string;
+        readonly BASE_URL: string;
+
         // Cookies file path
         readonly COOKIE_FILE_PATH: string;
     }

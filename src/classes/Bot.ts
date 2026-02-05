@@ -7,10 +7,14 @@ import type { CreateEventProps } from "@/handlers/event";
 import { importDefault } from "@/utils/import";
 import { logger } from "@/utils/logger";
 
+import { Agent } from "./Agent";
+
 export class Bot<Ready extends boolean = boolean> extends Client<Ready> {
     public commands: Map<string, CommandProps> = new Map();
     public categories: Map<string, string[]> = new Map();
     public aliases: Map<string, string> = new Map();
+
+    public agent = new Agent(this);
 
     #readyAt: If<Ready, Date> = null as If<Ready, Date>;
 
