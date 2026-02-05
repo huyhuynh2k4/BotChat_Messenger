@@ -18,14 +18,6 @@ export class Bot<Ready extends boolean = boolean> extends Client<Ready> {
 
     #readyAt: If<Ready, Date> = null as If<Ready, Date>;
 
-    public get readyAt(): If<Ready, Date> {
-        return this.#readyAt;
-    }
-
-    public get readyTimestamp(): If<Ready, number> {
-        return (this.#readyAt ? this.#readyAt.getTime() : null) as If<Ready, number>;
-    }
-
     constructor() {
         const cookieFilePath = path.join(process.cwd(), process.env.COOKIE_FILE_PATH);
         if (!fs.existsSync(cookieFilePath)) {
@@ -36,6 +28,18 @@ export class Bot<Ready extends boolean = boolean> extends Client<Ready> {
         const cookies = Utils.parseCookies(JSON.parse(cookiesString));
 
         super(cookies);
+    }
+
+    public get readyAt(): If<Ready, Date> {
+        return this.#readyAt;
+    }
+
+    public get readyTimestamp(): If<Ready, number> {
+        return (this.#readyAt ? this.#readyAt.getTime() : null) as If<Ready, number>;
+    }
+
+    public get uptime(): number {
+        return this.readyTimestamp ? Date.now() - this.readyTimestamp : 0;
     }
 
     public static createEvent<T extends keyof ClientEventMap>(props: CreateEventProps<T>) {
