@@ -1,11 +1,11 @@
+import crypto from "crypto";
+import type { BaseMessage } from "meta-messenger.js";
 import { OpenAI } from "openai";
+import type { ResponseInput } from "openai/resources/responses/responses";
 
 import type { Bot } from "./Bot";
 
 export class Agent extends OpenAI {
-    private readonly history = new Map<string, OpenAI.Chat.Completions.ChatCompletionMessageParam[]>();
-    private readonly MAX_COMPLETION_TOKENS = 4096;
-
     constructor(public readonly client: Bot) {
         super({
             baseURL: process.env.BASE_URL,
@@ -13,19 +13,27 @@ export class Agent extends OpenAI {
         });
     }
 
-    public async createCompletion(threadId: string, prompt: string) {
-        const history = this.history.get(threadId) || [];
+    public createSafetyIdentifier(userId: string): string {
+        return crypto.createHash("md5").update(userId).digest("hex");
+    }
 
-        const response = this.chat.completions.create({
-            model: process.env.MODEL_NAME,
-            max_completion_tokens: this.MAX_COMPLETION_TOKENS,
-            messages: [...history, { role: "user", content: prompt }],
-        });
-
-        response.then(res => {
-            const assistantMessage = res.choices[0].message;
-            history.push({ role: "user", content: prompt });
-            history.push({ role: "assistant", content: assistantMessage.content });
-        });
+    public async createCompletion(
+        userId: string,
+        message: BaseMessage,
+        input: ResponseInput,
+        abortController: AbortController,
+    ) {
+        this.responses.create(
+            {
+                safety_identifier: this.createSafetyIdentifier(userId),
+                model: process.env.MODEL_NAME,
+                truncation: "auto",
+                stream: true,
+                input,
+            },
+            {
+                signal: abortController.signal,
+            },
+        );
     }
 }
