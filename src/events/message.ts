@@ -19,7 +19,18 @@ export default Bot.createEvent({
         if (!command) return;
 
         try {
-            command.run({ client, message, args });
+            const send = (content: string) => {
+                return client.sendMessage(message.threadId, { text: content });
+            };
+
+            const reply = (content: string) => {
+                return client.sendMessage(message.threadId, {
+                    replyToId: message.id,
+                    text: content,
+                });
+            };
+
+            command.run({ client, message, args, send, reply });
         } catch (error) {
             logger.error(`Error executing command ${commandName}`);
             console.error(error);

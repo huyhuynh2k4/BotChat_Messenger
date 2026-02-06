@@ -19,7 +19,18 @@ export default Bot.createEvent({
         if (!command) return;
 
         try {
-            command.run({ client, message, args });
+            const send = (content: string) => {
+                return client.sendE2EEMessage(message.chatJid, content);
+            };
+
+            const reply = (content: string) => {
+                return client.sendE2EEMessage(message.chatJid, content, {
+                    replyToSenderJid: message.senderJid,
+                    replyToId: message.id,
+                });
+            };
+
+            command.run({ client, message, args, send, reply });
         } catch (error) {
             logger.error(`Error executing command ${commandName}`);
             console.error(error);

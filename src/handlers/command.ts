@@ -1,5 +1,5 @@
 import fs from "fs";
-import type { E2EEMessage, Message } from "meta-messenger.js";
+import type { E2EEMessage, Message, SendMessageResult } from "meta-messenger.js";
 import path from "path";
 
 import type { Bot } from "@/classes";
@@ -10,6 +10,8 @@ type CommandParams = {
     client: Bot<true>;
     message: Message | E2EEMessage;
     args: string[];
+    send: (content: string) => Promise<SendMessageResult>;
+    reply: (content: string) => Promise<SendMessageResult>;
 };
 
 export type CommandProps = {
