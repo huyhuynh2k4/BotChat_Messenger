@@ -7,9 +7,18 @@ export default Bot.createEvent({
         if (message.senderId.toString() === client.currentUserId.toString()) return;
         if (!message.text.startsWith(process.env.BOT_PREFIX)) {
             if (!message.mentions?.some(m => m.userId.toString() === client.currentUserId.toString())) return;
-            const response = await client.agent.processMessage(message.senderId.toString(), message.text, message);
+            if (!message.text.startsWith(`@${client.user.name}`)) return;
 
-            console.log(response);
+            const content = message.text.replace(`@${client.user.name}`, "").trim();
+
+            try {
+                const response = await client.agent.processMessage(message.senderId.toString(), content, message);
+                console.log(response);
+            } catch (error) {
+                logger.error(`Error processing message from ${message.senderId}: ${message.text}`);
+                console.error(error);
+                logger.debug(message);
+            }
 
             return;
         }

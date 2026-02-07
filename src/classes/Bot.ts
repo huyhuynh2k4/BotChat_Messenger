@@ -1,5 +1,5 @@
 import fs from "fs";
-import { Client, type ClientEventMap, type If, Utils } from "meta-messenger.js";
+import { Client, type ClientEventMap, type If, type User, Utils } from "meta-messenger.js";
 import path from "path";
 
 import { Agent } from "@/agent";
@@ -16,6 +16,7 @@ export class Bot<Ready extends boolean = boolean> extends Client<Ready> {
     public agent = new Agent(this);
 
     #readyAt: If<Ready, Date> = null as If<Ready, Date>;
+    #user: If<Ready, User> = null as If<Ready, User>;
 
     constructor() {
         const cookieFilePath = path.join(process.cwd(), process.env.COOKIE_FILE_PATH);
@@ -39,6 +40,10 @@ export class Bot<Ready extends boolean = boolean> extends Client<Ready> {
 
     public get uptime(): number {
         return this.readyTimestamp ? Date.now() - this.readyTimestamp : 0;
+    }
+
+    public get user(): If<Ready, User> {
+        return this.#user;
     }
 
     public static createEvent<T extends keyof ClientEventMap>(props: CreateEventProps<T>) {
@@ -68,6 +73,7 @@ export class Bot<Ready extends boolean = boolean> extends Client<Ready> {
         this.once("fullyReady", () => {
             logger.debug("> Client is fully ready!");
             this.#readyAt = new Date() as If<Ready, Date>;
+            this.#user = this.user as If<Ready, User>;
         });
 
         this.connect().then(({ user }) => {
