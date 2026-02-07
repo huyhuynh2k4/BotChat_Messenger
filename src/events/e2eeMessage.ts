@@ -3,9 +3,14 @@ import { logger } from "@/utils/logger";
 
 export default Bot.createEvent({
     eventName: "e2eeMessage",
-    emit: (client, message) => {
-        if (message.senderId === client.currentUserId) return;
+    emit: async (client, message) => {
+        if (message.senderId.toString() === client.currentUserId.toString()) return;
         if (!message.text.startsWith(process.env.BOT_PREFIX)) {
+            if (!message.mentions?.some(m => m.userId.toString() === client.currentUserId.toString())) return;
+            const response = await client.agent.processMessage(message.senderId.toString(), message.text, message);
+
+            console.log(response);
+
             return;
         }
 

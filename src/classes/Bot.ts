@@ -2,12 +2,11 @@ import fs from "fs";
 import { Client, type ClientEventMap, type If, Utils } from "meta-messenger.js";
 import path from "path";
 
+import { Agent } from "@/agent";
 import type { CommandProps } from "@/handlers/command";
 import type { CreateEventProps } from "@/handlers/event";
 import { importDefault } from "@/utils/import";
 import { logger } from "@/utils/logger";
-
-import { Agent } from "./Agent";
 
 export class Bot<Ready extends boolean = boolean> extends Client<Ready> {
     public commands: Map<string, CommandProps> = new Map();

@@ -9,7 +9,7 @@ import { logger } from "@/utils/logger";
 export type CreateEventProps<T extends keyof ClientEventMap = keyof ClientEventMap> = {
     eventName: T;
     once?: boolean;
-    emit: (client: Bot, ...args: ClientEventMap[T]) => void;
+    emit: (client: Bot<true>, ...args: ClientEventMap[T]) => void;
 };
 
 export default async (client: Bot) => {
