@@ -73,13 +73,13 @@ export class Bot<Ready extends boolean = boolean> extends Client<Ready> {
         this.once("fullyReady", () => {
             logger.debug("> Client is fully ready!");
             this.#readyAt = new Date() as If<Ready, Date>;
-            this.#user = this.user as If<Ready, User>;
         });
 
         this.connect().then(({ user }) => {
             logger.debug(`> Logged in as ${user.name} (ID: ${user.id})`);
             logger.debug("> Please wait until bot is fully ready...");
 
+            this.#user = user as If<Ready, User>;
             this.initializeHandlers();
         });
     }

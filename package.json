@@ -32,6 +32,7 @@
   "author": "mikamisonodev & aiko-chan-ai",
   "license": "AGPL-3.0-or-later",
   "dependencies": {
+    "axios": "^1.13.4",
     "debug": "^4.4.3",
     "dotenv": "^17.2.3",
     "meta-messenger.js": "^1.1.0",

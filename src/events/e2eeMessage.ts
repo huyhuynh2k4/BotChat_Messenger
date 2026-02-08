@@ -1,3 +1,5 @@
+import type { ResponseInputMessageContentList } from "openai/resources/responses/responses";
+
 import { Bot } from "@/classes";
 import { logger } from "@/utils/logger";
 
@@ -6,14 +8,56 @@ export default Bot.createEvent({
     emit: async (client, message) => {
         if (message.senderId.toString() === client.currentUserId.toString()) return;
         if (!message.text.startsWith(process.env.BOT_PREFIX)) {
-            if (!message.mentions?.some(m => m.userId.toString() === client.currentUserId.toString())) return;
-            if (!message.text.startsWith(`@${client.currentUserId}@msgr`)) return;
-
-            const content = message.text.replace(`@${client.currentUserId}@msgr`, "").trim();
-
             try {
-                const response = await client.agent.processMessage(message.senderId.toString(), content, message);
-                console.log(response);
+                const content: ResponseInputMessageContentList = [];
+
+                if (message.text.length > 0) {
+                    content.push({ type: "input_text", text: message.text });
+                }
+
+                if (message.attachments && message.attachments.length > 0) {
+                    for (const attachment of message.attachments) {
+                        if (attachment.type !== "image") continue;
+
+                        const image = await client.downloadE2EEMedia({
+                            directPath: attachment.directPath!,
+                            mediaKey: attachment.mediaKey!,
+                            mediaSha256: attachment.mediaSha256!,
+                            mediaEncSha256: attachment.mediaEncSha256,
+                            mediaType: attachment.type,
+                            mimeType: attachment.mimeType!,
+                            fileSize: attachment.fileSize!,
+                        });
+
+                        const base64Image = Buffer.from(image.data).toString("base64");
+
+                        content.push({
+                            image_url: `data:${image.mimeType};base64,${base64Image}`,
+                            type: "input_image",
+                            detail: "auto",
+                        });
+                    }
+                }
+
+                if (content.length === 0) {
+                    logger.error("No content to process for E2EE message");
+                    return logger.debug(message);
+                }
+
+                await client.sendE2EETyping(message.chatJid, true);
+
+                const msg = await client.sendE2EEMessage(message.chatJid, "⏰ | Chờ một chút nhé...", {
+                    replyToSenderJid: message.senderJid,
+                    replyToId: message.id,
+                });
+
+                await client.sendE2EETyping(message.chatJid, false);
+
+                const response = await client.agent.processMessage(message.senderId.toString(), [
+                    { role: "user", content, type: "message" },
+                ]);
+
+                await client.editE2EEMessage(message.chatJid, msg.messageId, response.output_text);
             } catch (error) {
                 logger.error(`Error processing message from ${message.senderId}: ${message.text}`);
                 console.error(error);
