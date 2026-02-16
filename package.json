@@ -5,6 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "dev:inspect": "tsx --inspect-brk src/index.ts",
     "start": "tsc src/index.ts",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
