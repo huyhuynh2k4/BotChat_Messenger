@@ -1,0 +1,65 @@
+name: BotChat Messenger CI/CD
+
+on:
+  push:
+    branches: ["main"]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # =====================
+      # 1. Clone repo
+      # =====================
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # =====================
+      # 2. Setup Node
+      # =====================
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: "npm"
+
+      # =====================
+      # 3. Install dependencies
+      # =====================
+      - name: Install dependencies
+        run: npm install
+
+      # =====================
+      # 4. Check lint (optional - có thể fail vẫn deploy)
+      # =====================
+      - name: Lint check
+        run: npm run lint || true
+
+      # =====================
+      # 5. Deploy to VPS
+      # =====================
+      - name: Deploy to VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: 22
+          script: |
+            echo "📦 Deploying BotChat Messenger..."
+
+            if [ ! -d "~/BotChat_Messenger" ]; then
+              git clone https://github.com/huyhuynh2k4/BotChat_Messenger.git ~/BotChat_Messenger
+            fi
+
+            cd ~/BotChat_Messenger
+
+            git pull origin main
+
+            npm install
+
+            # restart bot
+            pm2 restart botchat || pm2 start npm --name "botchat" -- start
+
+            pm2 save

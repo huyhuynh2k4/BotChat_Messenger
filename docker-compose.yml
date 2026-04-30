@@ -1,0 +1,12 @@
+version: "3.8"
+
+services:
+  bot:
+    image: yourdockerhubname/yumi-bot:latest
+    container_name: yumi-bot
+    restart: always
+    environment:
+      - BOT_PREFIX=!
+      - NODE_ENV=production
+    volumes:
+      - ./data:/app/data
