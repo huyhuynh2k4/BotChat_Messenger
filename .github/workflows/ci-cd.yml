@@ -1,65 +1,63 @@
-name: BotChat Messenger CI/CD
+name: Deploy via SSH
 
 on:
   push:
     branches: ["main"]
+
+  # Cho phép chạy thủ công trên GitHub
+  workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # =====================
-      # 1. Clone repo
-      # =====================
-      - name: Checkout code
+      # Checkout source code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # =====================
-      # 2. Setup Node
-      # =====================
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: "npm"
+      # Debug an toàn (không lộ secret)
+      - name: Check secrets (safe debug)
+        run: |
+          if [ -z "${{ secrets.HOST }}" ]; then
+            echo "HOST is NOT set"
+          else
+            echo "HOST is set"
+          fi
 
-      # =====================
-      # 3. Install dependencies
-      # =====================
-      - name: Install dependencies
-        run: npm install
+          if [ -z "${{ secrets.USERNAME }}" ]; then
+            echo "USERNAME is NOT set"
+          else
+            echo "USERNAME is set"
+          fi
 
-      # =====================
-      # 4. Check lint (optional - có thể fail vẫn deploy)
-      # =====================
-      - name: Lint check
-        run: npm run lint || true
+          if [ -z "${{ secrets.KEY }}" ]; then
+            echo "SSH KEY is NOT set"
+          else
+            echo "SSH KEY is set (length: $(echo '${{ secrets.KEY }}' | wc -c))"
+          fi
 
-      # =====================
-      # 5. Deploy to VPS
-      # =====================
-      - name: Deploy to VPS
+      # Deploy qua SSH
+      - name: Deploy to server
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          port: 22
+          host: ${{ secrets.HOST }}
+          username: ${{ secrets.USERNAME }}
+          key: ${{ secrets.KEY }}
+          port: ${{ secrets.PORT || 22 }}
+          command_timeout: 10m
           script: |
-            echo "📦 Deploying BotChat Messenger..."
+            echo "🚀 Starting deployment..."
 
-            if [ ! -d "~/BotChat_Messenger" ]; then
-              git clone https://github.com/huyhuynh2k4/BotChat_Messenger.git ~/BotChat_Messenger
-            fi
+            cd /var/www/app || exit 1
 
-            cd ~/BotChat_Messenger
-
+            echo "📥 Pulling latest code..."
             git pull origin main
 
+            echo "📦 Installing dependencies..."
             npm install
 
-            # restart bot
-            pm2 restart botchat || pm2 start npm --name "botchat" -- start
+            echo "🔄 Restarting app..."
+            pm2 restart all || pm2 start index.js
 
-            pm2 save
+            echo "✅ Deployment finished!"
