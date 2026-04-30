@@ -1,5 +1,5 @@
 import { Bot } from "@/classes/Bot";
-
+/*
 export default Bot.createCommand({
     name: "uptime",
     aliases: ["u"],
@@ -18,3 +18,5 @@ export default Bot.createCommand({
         reply(`🤖 Uptime: **${days}d ${hours}h ${minutes}m ${seconds}s**`);
     },
 });
+
+*/
