@@ -1,10 +1,9 @@
-name: Deploy via SSH
+name: Deploy SSH (Debug Mode)
 
 on:
   push:
     branches: ["main"]
 
-  # Cho phép chạy thủ công trên GitHub
   workflow_dispatch:
 
 jobs:
@@ -12,33 +11,45 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # Checkout source code
-      - name: Checkout repository
+      # 1. Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
 
-      # Debug an toàn (không lộ secret)
-      - name: Check secrets (safe debug)
+      # 2. DEBUG SECRETS (KHÔNG LỘ VALUE)
+      - name: Debug secrets safely
         run: |
+          echo "===== DEBUG SECRETS STATUS ====="
+
           if [ -z "${{ secrets.HOST }}" ]; then
-            echo "HOST is NOT set"
+            echo "❌ HOST: EMPTY or NOT SET"
           else
-            echo "HOST is set"
+            echo "✅ HOST: SET (length=$(echo '${{ secrets.HOST }}' | wc -c))"
           fi
 
           if [ -z "${{ secrets.USERNAME }}" ]; then
-            echo "USERNAME is NOT set"
+            echo "❌ USERNAME: EMPTY or NOT SET"
           else
-            echo "USERNAME is set"
+            echo "✅ USERNAME: SET (length=$(echo '${{ secrets.USERNAME }}' | wc -c))"
           fi
 
           if [ -z "${{ secrets.KEY }}" ]; then
-            echo "SSH KEY is NOT set"
+            echo "❌ KEY: EMPTY or NOT SET"
           else
-            echo "SSH KEY is set (length: $(echo '${{ secrets.KEY }}' | wc -c))"
+            echo "✅ KEY: SET (length=$(echo '${{ secrets.KEY }}' | wc -c))"
           fi
 
-      # Deploy qua SSH
-      - name: Deploy to server
+          echo "===== END DEBUG ====="
+
+      # 3. FAIL EARLY nếu thiếu HOST (quan trọng)
+      - name: Validate HOST
+        run: |
+          if [ -z "${{ secrets.HOST }}" ]; then
+            echo "❌ ERROR: HOST secret is missing"
+            exit 1
+          fi
+
+      # 4. SSH DEPLOY
+      - name: Deploy via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.HOST }}
@@ -47,17 +58,20 @@ jobs:
           port: ${{ secrets.PORT || 22 }}
           command_timeout: 10m
           script: |
-            echo "🚀 Starting deployment..."
+            echo "🚀 Connected to server"
 
-            cd /var/www/app || exit 1
+            cd /var/www/app || {
+              echo "❌ Cannot find /var/www/app"
+              exit 1
+            }
 
-            echo "📥 Pulling latest code..."
+            echo "📥 Pull latest code"
             git pull origin main
 
-            echo "📦 Installing dependencies..."
+            echo "📦 Install dependencies"
             npm install
 
-            echo "🔄 Restarting app..."
+            echo "🔄 Restart app"
             pm2 restart all || pm2 start index.js
 
-            echo "✅ Deployment finished!"
+            echo "✅ DONE DEPLOY"
