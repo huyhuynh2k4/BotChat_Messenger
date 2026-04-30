@@ -1,13 +1,9 @@
-name: CI/CD Docker Deploy
+name: CI/CD Docker GHCR
 
 on:
   push:
     branches: ["main"]
-
   workflow_dispatch:
-
-env:
-  IMAGE_NAME: my-app
 
 jobs:
   build:
@@ -15,54 +11,14 @@ jobs:
 
     steps:
       # 1. Checkout code
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v3
 
-      # 2. Login GHCR
+      # 2. Login to GHCR
       - name: Login to GHCR
-        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.repository_owner }} --password-stdin
 
-      # 3. Build image
-      - name: Build Docker image
+      # 3. Build & Push Docker image
+      - name: Build & Push
         run: |
-          docker build -t ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest .
-
-      # 4. Push image
-      - name: Push Docker image
-        run: |
-          docker push ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
-
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-
-    steps:
-      # 5. SSH Deploy to VPS
-      - name: Deploy to VPS
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          password: ${{ secrets.VPS_PASSWORD }}
-          port: 22
-          command_timeout: 10m
-          script: |
-            echo "🚀 Logging into GHCR..."
-
-            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-            echo "📥 Pulling latest image..."
-            docker pull ghcr.io/${{ github.repository_owner }}/my-app:latest
-
-            echo "🧹 Stopping old container..."
-            docker stop my-app || true
-            docker rm my-app || true
-
-            echo "▶️ Running new container..."
-            docker run -d \
-              --name my-app \
-              -p 3000:3000 \
-              --restart always \
-              ghcr.io/${{ github.repository_owner }}/my-app:latest
-
-            echo "✅ Deployment completed"
+          docker build -t ghcr.io/${{ github.repository_owner }}/game-server:latest .
+          docker push ghcr.io/${{ github.repository_owner }}/game-server:latest
