@@ -1,4 +1,4 @@
-name: Deploy SSH (Debug Mode)
+name: CI/CD Docker Deploy
 
 on:
   push:
@@ -6,72 +6,63 @@ on:
 
   workflow_dispatch:
 
+env:
+  IMAGE_NAME: my-app
+
 jobs:
-  deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
       # 1. Checkout code
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. DEBUG SECRETS (KHÔNG LỘ VALUE)
-      - name: Debug secrets safely
+      # 2. Login GHCR
+      - name: Login to GHCR
+        run: echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      # 3. Build image
+      - name: Build Docker image
         run: |
-          echo "===== DEBUG SECRETS STATUS ====="
+          docker build -t ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest .
 
-          if [ -z "${{ secrets.HOST }}" ]; then
-            echo "❌ HOST: EMPTY or NOT SET"
-          else
-            echo "✅ HOST: SET (length=$(echo '${{ secrets.HOST }}' | wc -c))"
-          fi
-
-          if [ -z "${{ secrets.USERNAME }}" ]; then
-            echo "❌ USERNAME: EMPTY or NOT SET"
-          else
-            echo "✅ USERNAME: SET (length=$(echo '${{ secrets.USERNAME }}' | wc -c))"
-          fi
-
-          if [ -z "${{ secrets.KEY }}" ]; then
-            echo "❌ KEY: EMPTY or NOT SET"
-          else
-            echo "✅ KEY: SET (length=$(echo '${{ secrets.KEY }}' | wc -c))"
-          fi
-
-          echo "===== END DEBUG ====="
-
-      # 3. FAIL EARLY nếu thiếu HOST (quan trọng)
-      - name: Validate HOST
+      # 4. Push image
+      - name: Push Docker image
         run: |
-          if [ -z "${{ secrets.HOST }}" ]; then
-            echo "❌ ERROR: HOST secret is missing"
-            exit 1
-          fi
+          docker push ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
 
-      # 4. SSH DEPLOY
-      - name: Deploy via SSH
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      # 5. SSH Deploy to VPS
+      - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: ${{ secrets.HOST }}
-          username: ${{ secrets.USERNAME }}
-          key: ${{ secrets.KEY }}
-          port: ${{ secrets.PORT || 22 }}
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          password: ${{ secrets.VPS_PASSWORD }}
+          port: 22
           command_timeout: 10m
           script: |
-            echo "🚀 Connected to server"
+            echo "🚀 Logging into GHCR..."
 
-            cd /var/www/app || {
-              echo "❌ Cannot find /var/www/app"
-              exit 1
-            }
+            echo "${{ secrets.GHCR_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
-            echo "📥 Pull latest code"
-            git pull origin main
+            echo "📥 Pulling latest image..."
+            docker pull ghcr.io/${{ github.repository_owner }}/my-app:latest
 
-            echo "📦 Install dependencies"
-            npm install
+            echo "🧹 Stopping old container..."
+            docker stop my-app || true
+            docker rm my-app || true
 
-            echo "🔄 Restart app"
-            pm2 restart all || pm2 start index.js
+            echo "▶️ Running new container..."
+            docker run -d \
+              --name my-app \
+              -p 3000:3000 \
+              --restart always \
+              ghcr.io/${{ github.repository_owner }}/my-app:latest
 
-            echo "✅ DONE DEPLOY"
+            echo "✅ Deployment completed"
