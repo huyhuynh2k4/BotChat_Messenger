@@ -24,8 +24,4 @@ database/
 update.txt
 src/prisma
 
-# env
-*.env*
 
-# cookies file
-cookies.json

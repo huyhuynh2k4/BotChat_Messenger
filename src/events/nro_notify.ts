@@ -37,54 +37,127 @@ export async function fetchData() {
 
 // =====================
 async function loop(reply: (msg: string) => Promise<any>) {
-    if (isLooping) return;
+    if (isLooping) {
+        console.log("⛔ SKIP: isLooping = true");
+        return;
+    }
+
     isLooping = true;
+    console.log("\n🔁 LOOP START");
 
     try {
         const data = await fetchData();
-        if (!data.length) return;
+
+        console.log("📦 FETCH:", data?.length || 0);
+
+        if (!data || data.length === 0) {
+            console.log("❌ NO DATA");
+            return;
+        }
+
         const config = getConfig();
+        console.log("⚙ CONFIG:", config);
+
         const newItems = data
             .filter((x: any) => Number(x.id) > state.lastId)
             .sort((a: any, b: any) => Number(a.id) - Number(b.id));
 
-        if (newItems.length === 0) return;
+        console.log("🆕 NEW ITEMS:", newItems.length, "lastId:", state.lastId);
+
+        if (newItems.length === 0) {
+            console.log("❌ NO NEW ITEMS");
+            return;
+        }
+
         const batch = config.enabled ? config.batch : 1;
         const batchSize = Math.max(batch || 1, 1);
+
+        console.log("📊 BATCH SIZE:", batchSize);
+
         const notiCache = newItems[newItems.length - 1];
         notiCache.time = formatTimePlus3(notiCache.time);
         saveNewItem(notiCache);
 
         if (!config.enabled) {
+            console.log("⛔ CONFIG DISABLED");
             state.lastId = Math.max(...newItems.map((x: any) => Number(x.id)));
             return;
         }
-        // 👉 lọc category
-        const filterKeyword = newItems.filter((item: any) => !checkFilter(item.value));
+
+        // =========================
+        // FILTER KEYWORD
+        // =========================
+        const filterKeyword = newItems.filter((item: any) => {
+            const isFiltered = checkFilter(item.value);
+
+            if (isFiltered) {
+                console.log("🚫 FILTER KEYWORD:", item.value);
+            }
+
+            return !isFiltered;
+        });
+
+        console.log("🔎 AFTER KEYWORD FILTER:", filterKeyword.length);
+
+        // =========================
+        // FILTER CATEGORY
+        // =========================
         const validItems = filterKeyword.filter((item: any) => {
             const cat = FilterNoti.getInstance().detectCategory(item.value);
 
-            return config.categories.includes(cat);
+            const isValid = config.categories.includes(cat);
+
+            console.log(`📂 ${item.value} -> CAT: ${cat} -> ${isValid ? "✅" : "❌"}`);
+
+            return isValid;
         });
 
-        // 👉 nếu chưa đủ batch thì bỏ qua
-        if (validItems.length < batchSize) return;
+        console.log("✅ VALID ITEMS:", validItems.length);
 
-        // 👉 lấy đúng batchSize item
+        // =========================
+        // CHECK BATCH
+        // =========================
+        if (validItems.length < batchSize) {
+            console.log("⛔ NOT ENOUGH BATCH:", validItems.length, "/", batchSize);
+            return;
+        }
+
+        // =========================
+        // BUILD MESSAGE
+        // =========================
         const chunk = validItems.slice(0, batchSize);
+
+        console.log(
+            "📤 CHUNK:",
+            chunk.map((x: any) => x.id),
+        );
 
         const message = chunk.map((x: any) => `📢 ${x.value}`).join("\n");
 
-        await reply(message);
+        console.log("📨 MESSAGE:\n", message);
 
-        // 👉 update lastId theo item cuối batch
+        // =========================
+        // SEND
+        // =========================
+        console.log("SEND TO ID:", config.id);
+        try {
+            const res = await reply(message);
+            console.log("✅ SENT SUCCESS:", res);
+        } catch (err: any) {
+            console.log("❌ SEND FAILED:", err?.message);
+        }
+
+        // =========================
+        // UPDATE LAST ID
+        // =========================
         state.lastId = Number(chunk[chunk.length - 1].id);
 
-        console.log("UPDATE lastId ->", state.lastId);
+        console.log("🔄 UPDATE lastId ->", state.lastId);
     } catch (e: any) {
-        console.log("ERR:", e.message);
+        console.log("💥 LOOP ERROR:", e?.message);
     } finally {
         isLooping = false;
+        console.log("🔁 LOOP END\n");
     }
 }
 

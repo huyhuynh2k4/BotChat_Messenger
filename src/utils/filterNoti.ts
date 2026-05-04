@@ -59,17 +59,30 @@ function readFilter(): string[] {
 
 // =====================
 // 🔥 HÀM CHECK
-// =====================
+function toAscii(text: string): string {
+    return text
+        .normalize("NFD") // tách dấu
+        .replace(/[\u0300-\u036f]/g, "") // xóa dấu
+        .toLowerCase()
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
 export function checkFilter(text: string): boolean {
     const keywords = readFilter();
-
     if (!text || keywords.length === 0) return false;
 
-    const lowerText = text.toLowerCase();
+    const lowerText = " " + toAscii(text) + " ";
 
     for (const k of keywords) {
-        if (lowerText.includes(k.toLowerCase())) {
-            console.log(`✅ MATCH: "${k}"`);
+        const key = toAscii(k);
+
+        if (!key || key.length < 2) continue;
+
+        const target = " " + key + " ";
+
+        if (lowerText.includes(target)) {
+            console.log("MATCH:", key);
             return true;
         }
     }

@@ -13,6 +13,23 @@ export default Bot.createCommand({
             return;
         }
         if (!cmd) {
+            let msg = "📦 SERVICE COMMAND:\n\n";
+
+            msg += "➤ !service check\n";
+            msg += "➤ !service add <content> @tag\n";
+            msg += "➤ !service remove <index>\n";
+            msg += "➤ !service remove all\n";
+            msg += "➤ !service filter\n";
+            msg += "➤ !service filter add <keyword>\n";
+            msg += "➤ !service filter remove <keyword>\n";
+            msg += "➤ !service filter remove all\n\n";
+
+            msg += "📂 CURRENT SERVICE:\n";
+
+            await reply(msg);
+            return;
+        }
+        if (cmd == "check") {
             await reply(formatShopTable(shop));
             return;
         }
