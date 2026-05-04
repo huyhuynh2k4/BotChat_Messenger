@@ -132,7 +132,13 @@ async function loop(reply: (msg: string) => Promise<any>) {
             chunk.map((x: any) => x.id),
         );
 
-        const message = chunk.map((x: any) => `📢 ${x.value}`).join("\n");
+        const message = chunk
+            .map((x: any) => {
+                const rawTime = x.time || new Date().toISOString(); // 🔥 fallback
+                const time = formatTimePlus3(rawTime);
+                return formatBoss(x.value, time);
+            })
+            .join("\n");
 
         console.log("📨 MESSAGE:\n", message);
 
@@ -167,6 +173,7 @@ function CacheNoti() {
     if (data == null) return;
     saveNewItem(data);
 }
+
 export default Bot.createEvent({
     eventName: "message",
 
@@ -191,19 +198,63 @@ export default Bot.createEvent({
         console.log("🚀 START AUTO LOOP");
         while (true) {
             await loop(reply);
-            await sleep(5000);
+            const config = getConfig();
+            const delay = (config.delay || 5) * 1000; // default 5s
+
+            await sleep(delay);
         }
     },
 });
 
-function formatTimePlus3(timeStr: string): string {
-    const date = new Date(timeStr);
+function formatTimePlus3(timeStr?: string): string {
+    if (!timeStr) return "";
 
-    // cộng thêm 3 phút
-    date.setMinutes(date.getMinutes());
+    // 🔥 FIX: remove microseconds
+    const clean = timeStr.replace(/\.\d+/, "");
+
+    const date = new Date(clean);
+
+    if (isNaN(date.getTime())) {
+        console.log("❌ INVALID TIME:", timeStr);
+        return ""; // hoặc fallback giờ hiện tại
+    }
 
     const hours = String(date.getHours()).padStart(2, "0");
     const minutes = String(date.getMinutes()).padStart(2, "0");
 
     return `${hours}:${minutes}`;
+}
+
+function formatBoss(value: string, time: string): string {
+    if (!value) return "";
+
+    // =========================
+    // 🔥 CLEAN TEXT
+    // =========================
+    value = value.replace(/mọi người đều ngưỡng mộ\.?/gi, "").trim();
+
+    // =========================
+    // 🔥 CASE 1: BOSS SPAWN
+    // =========================
+    if (value.includes("BOSS") && value.includes("vừa xuất hiện")) {
+        const bossMatch = value.match(/BOSS\s+(.+?)\s+vừa/);
+        const bossName = bossMatch ? bossMatch[1] : "";
+
+        const mapMatch = value.match(/tại\s+(.+)/);
+        const mapName = mapMatch ? mapMatch[1] : "";
+
+        return `🔥 BOSS ${bossName} ---- ${mapName} : ${time}`;
+    }
+
+    // =========================
+    // 🔥 CASE 2: KILL BOSS
+    // =========================
+    if (value.includes("Đã tiêu diệt được")) {
+        return `⚔️ ${value} : ${time}`;
+    }
+
+    // =========================
+    // 🔥 DEFAULT
+    // =========================
+    return `📢 ${value} : ${time}`;
 }

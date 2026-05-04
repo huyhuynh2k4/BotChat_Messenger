@@ -133,7 +133,33 @@ export default Bot.createCommand({
         const threadID = getThreadID(message);
         const cmd = args[0]?.toLowerCase();
         const prefix = "!";
+        if (!cmd) {
+            const prefix = "!";
 
+            let msg =
+                `»»»»» ${toBoldText("NRO NOTIFY")} «««««\n` +
+                `──────────────\n` +
+                `⚙️ ${toBoldText("SYSTEM")}:\n` +
+                `${toBoldText(prefix + "nronoti on")}\n` +
+                `${toBoldText(prefix + "nronoti off")}\n` +
+                `${toBoldText(prefix + "nronoti status")}\n` +
+                `${toBoldText(prefix + "nronoti delay 5")}\n` +
+                `${toBoldText(prefix + "nronoti batch 3")}\n\n` +
+                `🔍 ${toBoldText("FILTER")}:\n` +
+                `${toBoldText(prefix + "nronoti addfilter name")}\n` +
+                `${toBoldText(prefix + "nronoti removefilter name")}\n` +
+                `${toBoldText(prefix + "nronoti listfilter")}\n\n` +
+                `📂 ${toBoldText("CATEGORY")}:\n` +
+                `${toBoldText(prefix + "nronoti cat list")}\n` +
+                `${toBoldText(prefix + "nronoti cat on BOSS")}\n` +
+                `${toBoldText(prefix + "nronoti cat off BOSS")}\n\n` +
+                `📦 ${toBoldText("OTHER")}:\n` +
+                `${toBoldText(prefix + "nronoti setbox")}\n` +
+                `──────────────`;
+
+            await reply(msg);
+            return;
+        }
         const settings = readJSON(SETTINGS_PATH, {});
         const senderID = String(message.senderId);
 
@@ -338,16 +364,5 @@ export default Bot.createCommand({
         }
 
         // ===== HELP =====
-        await reply(
-            `📌 ${toBoldText("NRO COMMANDS")}\n` +
-                `──────────────\n` +
-                `${toBoldText(prefix + "nronoti on")}\n` +
-                `${toBoldText(prefix + "nronoti off")}\n` +
-                `${toBoldText(prefix + "nronoti status")}\n` +
-                `${toBoldText(prefix + "nronoti delay 2")}\n` +
-                `${toBoldText(prefix + "nronoti addfilter name")}\n` +
-                `${toBoldText(prefix + "nronoti removefilter name")}\n` +
-                `${toBoldText(prefix + "nronoti listfilter")}`,
-        );
     },
 });

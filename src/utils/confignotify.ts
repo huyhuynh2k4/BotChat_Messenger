@@ -30,7 +30,7 @@ let globalConfig = readJSON(SETTINGS_PATH, {
 });
 
 export function getConfig() {
-    return globalConfig;
+    return readJSON(SETTINGS_PATH, globalConfig);
 }
 
 export function updateConfig(patch: Partial<typeof globalConfig>) {
