@@ -134,9 +134,7 @@ async function loop(reply: (msg: string) => Promise<any>) {
 
         const message = chunk
             .map((x: any) => {
-                const rawTime = x.time || new Date().toISOString(); // 🔥 fallback
-                const time = formatTimePlus3(rawTime);
-                return formatBoss(x.value, time);
+                return formatBoss(x.value, x.time);
             })
             .join("\n");
 
@@ -209,20 +207,18 @@ export default Bot.createEvent({
 function formatTimePlus3(timeStr?: string): string {
     if (!timeStr) return "";
 
-    // 🔥 FIX: remove microseconds
     const clean = timeStr.replace(/\.\d+/, "");
 
     const date = new Date(clean);
 
-    if (isNaN(date.getTime())) {
-        console.log("❌ INVALID TIME:", timeStr);
-        return ""; // hoặc fallback giờ hiện tại
-    }
+    if (isNaN(date.getTime())) return "";
 
-    const hours = String(date.getHours()).padStart(2, "0");
-    const minutes = String(date.getMinutes()).padStart(2, "0");
-
-    return `${hours}:${minutes}`;
+    return date.toLocaleTimeString("vi-VN", {
+        hour: "2-digit",
+        minute: "2-digit",
+        hour12: false,
+        timeZone: "Asia/Ho_Chi_Minh", // 🔥 FIX CHÍNH
+    });
 }
 
 function formatBoss(value: string, time: string): string {
@@ -250,11 +246,11 @@ function formatBoss(value: string, time: string): string {
     // 🔥 CASE 2: KILL BOSS
     // =========================
     if (value.includes("Đã tiêu diệt được")) {
-        return `⚔️ ${value} : ${time}`;
+        return `⚔️ ${value} ---- ${time}`;
     }
 
     // =========================
     // 🔥 DEFAULT
     // =========================
-    return `📢 ${value} : ${time}`;
+    return `📢 ${value} ---- ${time}`;
 }

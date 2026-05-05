@@ -68,7 +68,47 @@ export class Bot<Ready extends boolean = boolean> extends Client<Ready> {
             await handler(this);
         }
     }
+    // thêm vào trong class Bot
 
+    public async startSafe() {
+        try {
+            this.once("fullyReady", () => {
+                this.#readyAt = new Date() as any;
+            });
+
+            const { user } = await this.connect();
+
+            this.#user = user as any;
+
+            console.log(`> Logged in as ${user.name} (${user.id})`);
+            console.log("> Initializing handlers...");
+
+            await this.initializeHandlers();
+        } catch (err) {
+            // đẩy lên cho index.ts restart
+            (this as any).emit("__fatal__", err as Error);
+            throw err;
+        }
+    }
+
+    public async reconnectSafe() {
+        try {
+            // tuỳ lib, nếu có close/disconnect thì gọi trước
+            // @ts-ignore
+            if (typeof this.disconnect === "function") {
+                try {
+                    await this.disconnect();
+                } catch {}
+            }
+
+            await this.connect();
+
+            console.log("✅ Reconnected");
+        } catch (err) {
+            (this as any).emit("__fatal__", err as Error);
+            throw err;
+        }
+    }
     public start() {
         this.once("fullyReady", () => {
             logger.debug("> Client is fully ready!");

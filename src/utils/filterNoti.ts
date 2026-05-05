@@ -61,13 +61,13 @@ function readFilter(): string[] {
 // 🔥 HÀM CHECK
 function toAscii(text: string): string {
     return text
-        .normalize("NFD") // tách dấu
-        .replace(/[\u0300-\u036f]/g, "") // xóa dấu
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "") // bỏ dấu
         .toLowerCase()
+        .replace(/[^\w\s]/g, " ") // 🔥 THÊM DÒNG NÀY (xoá . , :)
         .replace(/\s+/g, " ")
         .trim();
 }
-
 export function checkFilter(text: string): boolean {
     const keywords = readFilter();
     if (!text || keywords.length === 0) return false;
