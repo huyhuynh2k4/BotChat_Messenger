@@ -1,23 +1,14 @@
 import fs from "fs";
 import path from "path";
-import { Bot } from "@/classes/Bot";
 import { checkAdmin, isOwner, getAdminData } from "@/utils/permission";
 import { fetchData, state } from "@/events/nro_notify";
+import { Bot } from "@/classes/Bot";
 import { getConfig, updateConfig } from "@/utils/confignotify";
+
+const ALL_CATEGORIES = ["BOSS", "UPGRADE", "REWARD", "CRYSTALLIZATION", "DIVINE_ITEMS", "SYSTEM", "OTHER"];
 // =====================
 const SETTINGS_PATH = path.join(process.cwd(), "data/nro_notify_settings.json");
 const FILTER_PATH = path.join(process.cwd(), "data/filter.json");
-
-const ALL_CATEGORIES = ["BOSS", "UPGRADE", "REWARD", "CRYSTALLIZATION", "DIVINE_ITEMS", "SYSTEM", "OTHER"];
-let globalConfig = readJSON(SETTINGS_PATH, {
-    id: "",
-    enabled: false,
-    delay: 5,
-    batch: 1,
-    server: "1 sao",
-    categories: ["BOSS", "UPGRADE", "CRYSTALLIZATION", "DIVINE_ITEMS", "SYSTEM", "OTHER"],
-});
-const enabled = globalConfig.categories as string[];
 
 // =====================
 // UTILS
@@ -209,7 +200,6 @@ export default Bot.createCommand({
 
             const newConfig = updateConfig({
                 enabled: isOn,
-                id: globalConfig.id || String(message.threadId),
             });
 
             console.log("💾 CONFIG:", newConfig);
@@ -220,7 +210,7 @@ export default Bot.createCommand({
         // ===== BATCH =====
         if (cmd === "batch") {
             if (!args[1]) {
-                await reply(`📦 Batch: ${globalConfig.batch}`);
+                await reply(`📦 Batch: ${getConfig().batch}`);
                 return;
             }
 
@@ -241,14 +231,14 @@ export default Bot.createCommand({
 
         // ===== STATUS =====
         if (cmd === "status") {
-            const c = globalConfig;
+            const c = getConfig();
 
             await reply(
                 `📊 STATUS\n` +
-                    `• Box: ${c.id}\n` +
                     `• ON: ${c.enabled}\n` +
                     `• Delay: ${c.delay}s\n` +
-                    `• Batch: ${c.batch}`,
+                    `• Batch: ${c.batch}\n` +
+                    `• Categories: ${c.categories.join(", ")}`,
             );
             return;
         }
@@ -328,13 +318,15 @@ export default Bot.createCommand({
             const sub = args[1]?.toLowerCase();
             const cat = args[2]?.toUpperCase();
 
+            // ===== ON / OFF =====
             if ((sub === "on" || sub === "off") && cat) {
                 if (!ALL_CATEGORIES.includes(cat)) {
                     await reply("❌ Category không tồn tại");
                     return;
                 }
 
-                let newCats = [...globalConfig.categories];
+                const config = getConfig();
+                let newCats = [...config.categories];
 
                 if (sub === "on") {
                     if (!newCats.includes(cat)) newCats.push(cat);
@@ -348,15 +340,16 @@ export default Bot.createCommand({
                 return;
             }
             if (sub === "list") {
-                const enabled = globalConfig.categories as string[];
+                const config = getConfig();
+                const enabled = config.categories;
 
                 let msg = "📂 CATEGORY\n\n";
 
                 msg += "✅ Đang bật:\n";
-                msg += enabled.length ? enabled.map((c: string) => `• ${c}`).join("\n") : "Không có";
+                msg += enabled.length ? enabled.map(c => `• ${c}`).join("\n") : "Không có";
 
                 msg += "\n\n📦 Tất cả:\n";
-                msg += ALL_CATEGORIES.map((c: string) => (enabled.includes(c) ? `🟢 ${c}` : `⚫ ${c}`)).join("\n");
+                msg += ALL_CATEGORIES.map(c => (enabled.includes(c) ? `🟢 ${c}` : `⚫ ${c}`)).join("\n");
 
                 await reply(msg);
                 return;
