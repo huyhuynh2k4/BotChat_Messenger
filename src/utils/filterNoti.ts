@@ -64,14 +64,16 @@ function readFilter(): string[] {
 function toAscii(text: string): string {
     return text
         .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "") // bỏ dấu
+        .replace(/[\u0300-\u036f]/g, "")
         .toLowerCase()
-        .replace(/[^\w\s]/g, " ") // 🔥 THÊM DÒNG NÀY (xoá . , :)
+        .replace(/[^\w\s+]/g, " ")
         .replace(/\s+/g, " ")
         .trim();
 }
+
 export function checkFilter(text: string): boolean {
     const keywords = readFilter();
+
     if (!text || keywords.length === 0) return false;
 
     const lowerText = " " + toAscii(text) + " ";
@@ -79,7 +81,7 @@ export function checkFilter(text: string): boolean {
     for (const k of keywords) {
         const key = toAscii(k);
 
-        if (!key || key.length < 2) continue;
+        if (!key.trim()) continue;
 
         const target = " " + key + " ";
 
