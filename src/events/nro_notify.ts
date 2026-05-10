@@ -246,11 +246,11 @@ function formatBoss(value: string, time: string): string {
     // 🔥 CASE 2: KILL BOSS
     // =========================
     if (value.includes("Đã tiêu diệt được")) {
-        return `⚔️ ${value} ---- ${time}`;
+        return `⚔️ ${value} ---- $00.00`;
     }
 
     // =========================
     // 🔥 DEFAULT
     // =========================
-    return `📢 ${value} ---- ${time}`;
+    return `📢 ${value} `;
 }

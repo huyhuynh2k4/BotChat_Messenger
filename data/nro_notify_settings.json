@@ -1,8 +1,8 @@
 {
     "id": "6821419474621125",
     "enabled": true,
-    "delay": 3,
-    "server": "1 sao",
+    "delay": 8,
     "batch": 1,
-    "categories": ["CRYSTALLIZATION", "DIVINE_ITEMS", "SYSTEM"]
+    "server": "1 sao",
+    "categories": ["CRYSTALLIZATION", "DIVINE_ITEMS", "SYSTEM", "OTHER", "UPGRADE", "REWARD"]
 }

@@ -2,13 +2,13 @@ export class FilterNoti {
     private static instance: FilterNoti;
 
     public readonly CATEGORY_MAP: Record<string, string[]> = {
-        BOSS: ["boss", "tiêu diệt"],
-        REWARD: ["may mắn"],
-        UPGRADE: ["nâng cấp"],
-        CRYSTALLIZATION: ["pha lê", "chúc mừng"],
-        DIVINE_ITEMS: ["đồ thần linh", "thần linh"],
-        SYSTEM: ["vừa đánh quái"],
-        OTHER: ["nhặt được", "vừa lên top"],
+        BOSS: ["boss", "tieu diet"],
+        REWARD: ["may man", "cai trang"],
+        UPGRADE: ["nang cap"],
+        CRYSTALLIZATION: ["pha le", "chuc mung"],
+        DIVINE_ITEMS: ["do than linh", "than linh"],
+        SYSTEM: ["vua danh quai"],
+        OTHER: ["nhat duoc", "vua len top"],
     };
 
     private constructor() {}
@@ -21,13 +21,15 @@ export class FilterNoti {
     }
 
     public detectCategory(text: string): string {
-        const lower = text.toLowerCase();
+        const normalized = toAscii(text); // 🔥 FIX
 
         for (const cat in this.CATEGORY_MAP) {
             const keywords = this.CATEGORY_MAP[cat];
 
             for (const k of keywords) {
-                if (lower.includes(k)) {
+                const key = toAscii(k); // 🔥 FIX
+
+                if (normalized.includes(key)) {
                     return cat;
                 }
             }
