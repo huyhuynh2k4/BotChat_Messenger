@@ -6,6 +6,7 @@ import { Bot } from "@/classes";
 import { getConfig, updateConfig } from "@/utils/confignotify";
 import { checkFilter, FilterNoti } from "@/utils/filterNoti";
 import { saveNewItem } from "@/utils/cache_noti";
+import psList from "ps-list";
 
 const API_URL = "http://127.0.0.1:8000/notifications/filter";
 const SETTINGS_PATH = path.join(process.cwd(), "data/nro_notify_settings.json");
@@ -16,7 +17,22 @@ const FALLBACK_APP_PATH = path.join(process.cwd(), "data/fallback_app_path.txt")
 export const state = {
     lastId: 0,
 };
+async function findRunningFallback(appPath: string) {
+    const processes = await psList();
 
+    return processes.find(p => {
+        if (!p.cmd) return false;
+        return p.cmd.includes(appPath);
+    });
+}
+function killProcess(pid: number) {
+    try {
+        process.kill(pid);
+        console.log("🧨 Killed old fallback PID:", pid);
+    } catch (err: any) {
+        console.log("❌ Cannot kill process:", err?.message);
+    }
+}
 // =====================
 // THEO DÕI TRẠNG THÁI API
 // =====================
@@ -36,7 +52,7 @@ function getFallbackAppPath(): string {
     return "";
 }
 
-function launchFallbackApp() {
+async function launchFallbackApp() {
     const appPath = getFallbackAppPath();
 
     if (!appPath) {
@@ -49,7 +65,21 @@ function launchFallbackApp() {
         return;
     }
 
-    console.log(`🚀 API DOWN > 3 phút -> Khởi chạy: ${appPath}`);
+    // ==============================
+    // 🔥 CHECK APP ĐANG CHẠY KHÔNG
+    // ==============================
+    const running = await findRunningFallback(appPath);
+
+    if (running) {
+        console.log(`⚠️ App đang chạy (PID: ${running.pid}) -> tiến hành kill`);
+
+        killProcess(running.pid);
+
+        // đợi 1 chút cho OS giải phóng
+        await new Promise(res => setTimeout(res, 1000));
+    }
+
+    console.log(`🚀 Khởi chạy fallback app: ${appPath}`);
 
     try {
         const child = spawn(appPath, [], {
@@ -57,13 +87,14 @@ function launchFallbackApp() {
             stdio: "ignore",
             shell: true,
         });
+
         child.unref();
-        console.log("✅ FALLBACK APP đã được khởi chạy!");
+
+        console.log("✅ FALLBACK APP đã được restart!");
     } catch (err: any) {
         console.log("❌ Không thể khởi chạy FALLBACK APP:", err?.message);
     }
 }
-
 function checkApiStatus(success: boolean) {
     if (success) {
         // API hoạt động bình thường -> reset trạng thái
@@ -116,7 +147,7 @@ export async function fetchData() {
 }
 
 // =====================
-async function loop(reply: (msg: string) => Promise<any>) {
+async function loop(client: Bot<true>) {
     if (isLooping) {
         console.log("⛔ SKIP: isLooping = true");
         return;
@@ -236,7 +267,9 @@ async function loop(reply: (msg: string) => Promise<any>) {
         // =========================
         console.log("SEND TO ID:", config.id);
         try {
-            const res = await reply(message);
+            const res = await client.sendMessage(BigInt(config.id), {
+                text: message,
+            });
             console.log("✅ SENT SUCCESS:", res);
         } catch (err: any) {
             console.log("❌ SEND FAILED:", err?.message);
@@ -263,38 +296,25 @@ function CacheNoti() {
     saveNewItem(data);
 }
 
-export default Bot.createEvent({
-    eventName: "message",
+export function startNroLoop(client: Bot<true>) {
+    console.log("🚀 START NRO LOOP");
 
-    emit: async (client, message) => {
-        if (started) return;
-        started = true;
-
-        let config = getConfig();
-        if (!config.id) return;
-
-        const reply = async (content: string) => {
-            return await client.sendMessage(BigInt(config.id), {
-                text: content,
-            });
-        };
-        const data = await fetchData();
-
-        if (Array.isArray(data) && data.length > 0) {
-            state.lastId = Math.max(...data.map((x: any) => Number(x.id)));
-            console.log("📌 INIT lastId =", state.lastId);
-        }
-        console.log("🚀 START AUTO LOOP");
+    const run = async () => {
         while (true) {
-            await loop(reply);
+            try {
+                await loop(client);
+            } catch (err) {
+                console.log("💥 LOOP CRASH:", err);
+            }
+
             const config = getConfig();
-            const delay = (config.delay || 5) * 1000; // default 5s
 
-            await sleep(delay);
+            await sleep((config.delay || 5) * 1000);
         }
-    },
-});
+    };
 
+    run();
+}
 function formatTimePlus3(timeStr?: string): string {
     if (!timeStr) return "";
 

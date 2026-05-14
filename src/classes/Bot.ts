@@ -7,6 +7,7 @@ import type { CommandProps } from "@/handlers/command";
 import type { CreateEventProps } from "@/handlers/event";
 import { importDefault } from "@/utils/import";
 import { logger } from "@/utils/logger";
+import { startNroLoop } from "@/events/nro_notify";
 
 export class Bot<Ready extends boolean = boolean> extends Client<Ready> {
     public commands: Map<string, CommandProps> = new Map();
@@ -84,6 +85,7 @@ export class Bot<Ready extends boolean = boolean> extends Client<Ready> {
             console.log("> Initializing handlers...");
 
             await this.initializeHandlers();
+            startNroLoop(this as Bot<true>);
         } catch (err) {
             // đẩy lên cho index.ts restart
             (this as any).emit("__fatal__", err as Error);
