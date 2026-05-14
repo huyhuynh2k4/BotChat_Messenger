@@ -1,6 +1,7 @@
 import axios from "axios";
 import fs from "fs";
 import path from "path";
+import { spawn } from "child_process";
 import { Bot } from "@/classes";
 import { getConfig, updateConfig } from "@/utils/confignotify";
 import { checkFilter, FilterNoti } from "@/utils/filterNoti";
@@ -9,9 +10,83 @@ import { saveNewItem } from "@/utils/cache_noti";
 const API_URL = "http://127.0.0.1:8000/notifications/filter";
 const SETTINGS_PATH = path.join(process.cwd(), "data/nro_notify_settings.json");
 
+// Đường dẫn ứng dụng sẽ chạy khi API down quá 3 phút
+const FALLBACK_APP_PATH = path.join(process.cwd(), "data/fallback_app_path.txt");
+
 export const state = {
     lastId: 0,
 };
+
+// =====================
+// THEO DÕI TRẠNG THÁI API
+// =====================
+const apiStatus = {
+    lastSuccessTime: Date.now(), // Lần cuối API hoạt động
+    isDown: false, // API đang down không
+    fallbackLaunched: false, // Đã chạy app fallback chưa
+    API_DOWN_THRESHOLD_MS: 1 * 60 * 1000, // 3 phút
+};
+
+function getFallbackAppPath(): string {
+    try {
+        if (fs.existsSync(FALLBACK_APP_PATH)) {
+            return fs.readFileSync(FALLBACK_APP_PATH, "utf-8").trim();
+        }
+    } catch {}
+    return "";
+}
+
+function launchFallbackApp() {
+    const appPath = getFallbackAppPath();
+
+    if (!appPath) {
+        console.log("⚠️ FALLBACK APP PATH không được cấu hình!");
+        return;
+    }
+
+    if (!fs.existsSync(appPath)) {
+        console.log(`⚠️ FALLBACK APP không tồn tại: ${appPath}`);
+        return;
+    }
+
+    console.log(`🚀 API DOWN > 3 phút -> Khởi chạy: ${appPath}`);
+
+    try {
+        const child = spawn(appPath, [], {
+            detached: true,
+            stdio: "ignore",
+            shell: true,
+        });
+        child.unref();
+        console.log("✅ FALLBACK APP đã được khởi chạy!");
+    } catch (err: any) {
+        console.log("❌ Không thể khởi chạy FALLBACK APP:", err?.message);
+    }
+}
+
+function checkApiStatus(success: boolean) {
+    if (success) {
+        // API hoạt động bình thường -> reset trạng thái
+        if (apiStatus.isDown) {
+            console.log("✅ API đã hoạt động trở lại!");
+        }
+        apiStatus.lastSuccessTime = Date.now();
+        apiStatus.isDown = false;
+        apiStatus.fallbackLaunched = false;
+        return;
+    }
+
+    // API thất bại -> kiểm tra thời gian down
+    const downDuration = Date.now() - apiStatus.lastSuccessTime;
+    apiStatus.isDown = true;
+
+    console.log(`⚠️ API DOWN: ${Math.floor(downDuration / 1000)}s / ${apiStatus.API_DOWN_THRESHOLD_MS / 1000}s`);
+
+    if (downDuration >= apiStatus.API_DOWN_THRESHOLD_MS && !apiStatus.fallbackLaunched) {
+        apiStatus.fallbackLaunched = true;
+        launchFallbackApp();
+    }
+}
 
 let isLooping = false;
 
@@ -27,10 +102,15 @@ export async function fetchData() {
             server: "1 sao",
         });
 
-        if (!res.data?.success) return [];
+        if (!res.data?.success) {
+            checkApiStatus(false);
+            return [];
+        }
 
+        checkApiStatus(true);
         return res.data.data || [];
     } catch {
+        checkApiStatus(false);
         return [];
     }
 }
@@ -57,6 +137,17 @@ async function loop(reply: (msg: string) => Promise<any>) {
 
         const config = getConfig();
         console.log("⚙ CONFIG:", config);
+
+        // =========================
+        // RESET lastId nếu lệch quá 50
+        // =========================
+        const maxIdFromApi = Math.max(...data.map((x: any) => Number(x.id)));
+        if (state.lastId > maxIdFromApi + 50) {
+            console.log(
+                `⚠️ lastId (${state.lastId}) lớn hơn maxId API (${maxIdFromApi}) quá 50 -> RESET lastId = ${maxIdFromApi}`,
+            );
+            state.lastId = maxIdFromApi;
+        }
 
         const newItems = data
             .filter((x: any) => Number(x.id) > state.lastId)
